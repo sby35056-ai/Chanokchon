@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Double Pipe HX Calculator - Simple</title>
+<style>
+:root{
+  --bg:#f6f8fb;--card:#fff;--text:#172033;--muted:#667085;--line:#dfe4ea;
+  --blue:#2563a9;--bluebg:#edf4fd;--green:#277a38;--greenbg:#eaf6ec;
+  --red:#b42318;--yellow:#fff7da;--yellowtext:#6a4f00
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI","Noto Sans Thai",sans-serif}
+.wrap{width:min(1100px,94%);margin:26px auto 60px}
+h1{font-size:clamp(27px,4vw,40px);margin:0 0 8px}
+h2{font-size:22px;margin:0 0 8px}
+h3{font-size:17px;margin:16px 0 8px}
+p{line-height:1.6}.sub,.note{color:var(--muted)}.note{font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 8px 24px rgba(16,24,40,.05)}
+.inner{border-top:6px solid var(--blue)}.outer{border-top:6px solid var(--green)}
+.banner{background:var(--yellow);color:var(--yellowtext);padding:13px 15px;border-radius:12px;margin:16px 0;line-height:1.65}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+label{display:block;font-weight:750;margin:11px 0 6px}
+input,select{width:100%;padding:11px 12px;border:1px solid #cbd2dc;border-radius:10px;background:#fff;font-size:16px}
+.row{display:grid;grid-template-columns:1fr 120px;gap:8px}
+.sci{display:grid;grid-template-columns:1fr 66px 90px;gap:8px;align-items:center}
+button{border:0;border-radius:11px;padding:12px 14px;font-weight:800;font-size:15px;cursor:pointer}
+.btnInner{background:var(--blue);color:#fff;width:100%;margin-top:15px}
+.btnOuter{background:var(--green);color:#fff;width:100%;margin-top:15px}
+.secondary{background:#eef2f6;color:#25324a;width:100%;margin-top:10px}
+.formula{background:#fafbfc;border-radius:12px;padding:13px 15px;line-height:1.85;color:#475467;font-size:14px;margin-top:12px}
+.step{background:#fff;border:1px dashed #cfd6df;border-radius:12px;padding:12px 14px;margin:10px 0}
+.result{border-radius:14px;padding:10px 16px;margin-top:14px}
+.inner .result{background:var(--bluebg)}.outer .result{background:var(--greenbg)}
+.rr{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px dashed rgba(0,0,0,.12)}
+.rr:last-child{border-bottom:0}.val{font-weight:800;text-align:right}
+.error{display:none;background:#fff1f0;color:var(--red);padding:10px 12px;border-radius:10px;margin-top:10px;font-weight:700}
+.big{font-size:18px}.tag{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef2f6;font-size:12px;font-weight:800}
+@media(max-width:780px){.grid2,.grid3{grid-template-columns:1fr}.sci{grid-template-columns:1fr 58px 84px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<h1>Double-Pipe Heat Exchanger Calculator</h1>
+<p class="sub">แยกคำนวณ <b>ท่อใน</b> และ <b>ท่อนอก (Annulus)</b> คนละส่วน ตามที่อาจารย์ให้หาแยกกัน</p>
+
+<div class="banner">
+<b>ใช้ตัวแปรเหมือนกันทั้งสองฝั่ง:</b>
+Re = Reynolds number, ρ = density, μ = dynamic viscosity, v = linear velocity, A = flow area, Q = volumetric flow rate, D<sub>h</sub> = hydraulic diameter
+</div>
+
+<section class="card inner">
+<h2>1) ท่อใน (Inner Tube) <span class="tag">คำนวณแยก</span></h2>
+<p class="note">ของไหลไหลอยู่ภายในท่อกลมธรรมดา</p>
+
+<div class="grid2">
+  <div>
+    <label>D = เส้นผ่านศูนย์กลางด้านในของท่อใน</label>
+    <div class="row">
+      <input id="D_in" type="number" step="any" placeholder="กรอกหลังวัดหน้างาน">
+      <select id="D_in_u"><option>mm</option><option>cm</option><option>m</option><option>inch</option></select>
+    </div>
+  </div>
+  <div>
+    <label>Re ที่ต้องการ</label>
+    <input id="Re_in" type="number" step="any" placeholder="เช่น 4000 หรือค่าที่อาจารย์กำหนด">
+  </div>
+</div>
+
+<div class="grid2">
+  <div>
+    <label>ρ (kg/m³)</label>
+    <div class="sci">
+      <input id="rho_in" type="number" step="any" placeholder="เช่น 997">
+      <span>× 10^</span>
+      <input id="rhoe_in" type="number" step="1" value="0">
+    </div>
+  </div>
+  <div>
+    <label>μ (Pa·s)</label>
+    <div class="sci">
+      <input id="mu_in" type="number" step="any" placeholder="เช่น 0.89">
+      <span>× 10^</span>
+      <input id="mue_in" type="number" step="1" value="-3">
+    </div>
+  </div>
+</div>
+
+<div class="formula">
+<b>ท่อในใช้:</b><br>
+A = πD²/4<br>
+D<sub>h</sub> = D<br>
+v = Reμ/(ρD<sub>h</sub>)<br>
+Q = vA
+</div>
+
+<button class="btnInner" onclick="calcInner()">คำนวณท่อใน: Re → v → Q</button>
+<div id="err_in" class="error"></div>
+<div id="res_in" class="result"><div class="rr"><span>ผลลัพธ์</span><span class="val">–</span></div></div>
+
+<h3>ตรวจกลับจาก Flow rate จริงของเครื่อง</h3>
+<div class="grid2">
+  <div>
+    <label>Q จริงจากเครื่อง (L/min)</label>
+    <input id="Qactual_in" type="number" step="any" placeholder="กรอกหลังไปหน้างาน">
+  </div>
+  <div>
+    <label>&nbsp;</label>
+    <button class="secondary" onclick="checkInner()">หา v และ Re จริง</button>
+  </div>
+</div>
+<div id="check_in" class="result"><div class="rr"><span>ผลตรวจกลับ</span><span class="val">–</span></div></div>
+</section>
+
+<section class="card outer">
+<h2>2) ท่อนอก / ช่องวงแหวน (Annulus) <span class="tag">คำนวณแยก</span></h2>
+<p class="note">ของไหลไหลในช่องว่างระหว่างท่อสองชั้น จึงต้องใช้เส้นผ่านศูนย์กลาง 2 ค่า</p>
+
+<div class="grid2">
+  <div>
+    <label>D<sub>o</sub> = เส้นผ่านศูนย์กลางด้านในของท่อนอก</label>
+    <div class="row">
+      <input id="Do_out" type="number" step="any" placeholder="กรอกหลังวัดหน้างาน">
+      <select id="Do_out_u"><option>mm</option><option>cm</option><option>m</option><option>inch</option></select>
+    </div>
+  </div>
+  <div>
+    <label>D<sub>i</sub> = เส้นผ่านศูนย์กลางด้านนอกของท่อใน</label>
+    <div class="row">
+      <input id="Di_out" type="number" step="any" placeholder="กรอกหลังวัดหน้างาน">
+      <select id="Di_out_u"><option>mm</option><option>cm</option><option>m</option><option>inch</option></select>
+    </div>
+  </div>
+</div>
+
+<div class="grid3">
+  <div>
+    <label>Re ที่ต้องการ</label>
+    <input id="Re_out" type="number" step="any" placeholder="เช่น 4000">
+  </div>
+  <div>
+    <label>ρ (kg/m³)</label>
+    <div class="sci">
+      <input id="rho_out" type="number" step="any" placeholder="เช่น 997">
+      <span>× 10^</span>
+      <input id="rhoe_out" type="number" step="1" value="0">
+    </div>
+  </div>
+  <div>
+    <label>μ (Pa·s)</label>
+    <div class="sci">
+      <input id="mu_out" type="number" step="any" placeholder="เช่น 0.89">
+      <span>× 10^</span>
+      <input id="mue_out" type="number" step="1" value="-3">
+    </div>
+  </div>
+</div>
+
+<div class="formula">
+<b>ท่อนอก (Annulus) ใช้:</b><br>
+A = π(D<sub>o</sub>² − D<sub>i</sub>²)/4<br>
+D<sub>h</sub> = D<sub>o</sub> − D<sub>i</sub><br>
+v = Reμ/(ρD<sub>h</sub>)<br>
+Q = vA
+</div>
+
+<button class="btnOuter" onclick="calcOuter()">คำนวณท่อนอก: Re → v → Q</button>
+<div id="err_out" class="error"></div>
+<div id="res_out" class="result"><div class="rr"><span>ผลลัพธ์</span><span class="val">–</span></div></div>
+
+<h3>ตรวจกลับจาก Flow rate จริงของเครื่อง</h3>
+<div class="grid2">
+  <div>
+    <label>Q จริงจากเครื่อง (L/min)</label>
+    <input id="Qactual_out" type="number" step="any" placeholder="กรอกหลังไปหน้างาน">
+  </div>
+  <div>
+    <label>&nbsp;</label>
+    <button class="secondary" onclick="checkOuter()">หา v และ Re จริง</button>
+  </div>
+</div>
+<div id="check_out" class="result"><div class="rr"><span>ผลตรวจกลับ</span><span class="val">–</span></div></div>
+</section>
+
+<section class="card">
+<h2>3) ลำดับที่ใช้จริงตอนทำงาน</h2>
+
+<div class="step"><b>① ไปวัดขนาดท่อ</b><br>ท่อใน: วัด D<br>ท่อนอก: วัด D<sub>o</sub> และ D<sub>i</sub></div>
+
+<div class="step"><b>② หา ρ และ μ</b><br>ใช้ค่าของน้ำที่อุณหภูมิของแต่ละฝั่ง</div>
+
+<div class="step"><b>③ กำหนด Re ที่ต้องการ</b><br>กลุ่มของชาเป็น Turbulent ทั้งสองฝั่ง จึงกำหนด Re สำหรับท่อในและท่อนอกแยกกัน</div>
+
+<div class="step"><b>④ เว็บหา v ก่อน</b><br>v = Reμ/(ρD<sub>h</sub>)</div>
+
+<div class="step"><b>⑤ เว็บเอา v ไปหา Q</b><br>Q = vA แล้วแปลงเป็น L/min เพื่อเอาไปปรับหน้าเครื่อง</div>
+
+<div class="step"><b>⑥ ตอนอยู่หน้าเครื่อง</b><br>ถ้าปั๊มทำได้ไม่ถึงค่าที่คำนวณ ให้ใส่ Q จริงกลับเข้าช่อง “ตรวจกลับ” เว็บจะหา Re จริงให้ทันที</div>
+</section>
+
+</main>
+
+<script>
+function E(id){return document.getElementById(id)}
+function N(id){return parseFloat(E(id).value)}
+function sci(v,e){return v*Math.pow(10,e)}
+function toM(x,u){if(u==="m")return x;if(u==="cm")return x/100;if(u==="mm")return x/1000;if(u==="inch")return x*0.0254;return x}
+function fmt(x){if(!isFinite(x))return "–";var a=Math.abs(x);if((a>0&&a<0.001)||a>=100000)return x.toExponential(6);return x.toLocaleString("en-US",{maximumFractionDigits:8})}
+function regime(Re){if(Re<2300)return "Laminar";if(Re<=4000)return "Transition";return "Turbulent"}
+function showErr(id,msg){E(id).style.display="block";E(id).textContent=msg}
+function clearErr(id){E(id).style.display="none";E(id).textContent=""}
+
+function innerData(){
+  var D=toM(N("D_in"),E("D_in_u").value);
+  var rho=sci(N("rho_in"),N("rhoe_in")||0);
+  var mu=sci(N("mu_in"),N("mue_in")||0);
+  if(!(D>0))throw new Error("กรุณากรอก D ของท่อใน");
+  if(!(rho>0))throw new Error("กรุณากรอก ρ ของท่อใน");
+  if(!(mu>0))throw new Error("กรุณากรอก μ ของท่อใน");
+  return {D:D,A:Math.PI*D*D/4,Dh:D,rho:rho,mu:mu}
+}
+
+function outerData(){
+  var Do=toM(N("Do_out"),E("Do_out_u").value);
+  var Di=toM(N("Di_out"),E("Di_out_u").value);
+  var rho=sci(N("rho_out"),N("rhoe_out")||0);
+  var mu=sci(N("mu_out"),N("mue_out")||0);
+  if(!(Do>0))throw new Error("กรุณากรอก Dₒ ของท่อนอก");
+  if(!(Di>0))throw new Error("กรุณากรอก Dᵢ ของท่อนอก");
+  if(Do<=Di)throw new Error("Dₒ ต้องมากกว่า Dᵢ");
+  if(!(rho>0))throw new Error("กรุณากรอก ρ ของท่อนอก");
+  if(!(mu>0))throw new Error("กรุณากรอก μ ของท่อนอก");
+  return {Do:Do,Di:Di,A:Math.PI*(Do*Do-Di*Di)/4,Dh:Do-Di,rho:rho,mu:mu}
+}
+
+window.calcInner=function(){
+ clearErr("err_in");
+ try{
+  var d=innerData(),Re=N("Re_in");
+  if(!(Re>0))throw new Error("กรุณากรอก Re ที่ต้องการ");
+  var v=Re*d.mu/(d.rho*d.Dh),Q=v*d.A,QL=Q*60000;
+  E("res_in").innerHTML=
+   '<div class="rr"><span>Dₕ</span><span class="val">'+fmt(d.Dh)+' m</span></div>'+
+   '<div class="rr"><span>A</span><span class="val">'+fmt(d.A)+' m²</span></div>'+
+   '<div class="rr"><span>v</span><span class="val big">'+fmt(v)+' m/s</span></div>'+
+   '<div class="rr"><span>Q</span><span class="val">'+fmt(Q)+' m³/s</span></div>'+
+   '<div class="rr"><span>Q สำหรับปรับหน้าเครื่อง</span><span class="val big">'+fmt(QL)+' L/min</span></div>'+
+   '<div class="rr"><span>Re</span><span class="val">'+fmt(Re)+' ('+regime(Re)+')</span></div>';
+ }catch(ex){showErr("err_in",ex.message)}
+}
+
+window.calcOuter=function(){
+ clearErr("err_out");
+ try{
+  var d=outerData(),Re=N("Re_out");
+  if(!(Re>0))throw new Error("กรุณากรอก Re ที่ต้องการ");
+  var v=Re*d.mu/(d.rho*d.Dh),Q=v*d.A,QL=Q*60000;
+  E("res_out").innerHTML=
+   '<div class="rr"><span>Dₕ = Dₒ − Dᵢ</span><span class="val">'+fmt(d.Dh)+' m</span></div>'+
+   '<div class="rr"><span>A</span><span class="val">'+fmt(d.A)+' m²</span></div>'+
+   '<div class="rr"><span>v</span><span class="val big">'+fmt(v)+' m/s</span></div>'+
+   '<div class="rr"><span>Q</span><span class="val">'+fmt(Q)+' m³/s</span></div>'+
+   '<div class="rr"><span>Q สำหรับปรับหน้าเครื่อง</span><span class="val big">'+fmt(QL)+' L/min</span></div>'+
+   '<div class="rr"><span>Re</span><span class="val">'+fmt(Re)+' ('+regime(Re)+')</span></div>';
+ }catch(ex){showErr("err_out",ex.message)}
+}
+
+window.checkInner=function(){
+ try{
+  var d=innerData(),QL=N("Qactual_in");
+  if(!(QL>=0))throw new Error("กรุณากรอก Q จริง");
+  var Q=QL/60000,v=Q/d.A,Re=d.rho*v*d.Dh/d.mu;
+  E("check_in").innerHTML=
+   '<div class="rr"><span>v จริง</span><span class="val">'+fmt(v)+' m/s</span></div>'+
+   '<div class="rr"><span>Re จริง</span><span class="val big">'+fmt(Re)+'</span></div>'+
+   '<div class="rr"><span>Flow regime</span><span class="val">'+regime(Re)+'</span></div>';
+ }catch(ex){E("check_in").innerHTML='<div class="rr"><span>ผิดพลาด</span><span class="val">'+ex.message+'</span></div>'}
+}
+
+window.checkOuter=function(){
+ try{
+  var d=outerData(),QL=N("Qactual_out");
+  if(!(QL>=0))throw new Error("กรุณากรอก Q จริง");
+  var Q=QL/60000,v=Q/d.A,Re=d.rho*v*d.Dh/d.mu;
+  E("check_out").innerHTML=
+   '<div class="rr"><span>v จริง</span><span class="val">'+fmt(v)+' m/s</span></div>'+
+   '<div class="rr"><span>Re จริง</span><span class="val big">'+fmt(Re)+'</span></div>'+
+   '<div class="rr"><span>Flow regime</span><span class="val">'+regime(Re)+'</span></div>';
+ }catch(ex){E("check_out").innerHTML='<div class="rr"><span>ผิดพลาด</span><span class="val">'+ex.message+'</span></div>'}
+}
+</script>
+</body>
+</html>
