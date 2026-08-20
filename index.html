@@ -38,7 +38,25 @@ button{border:0;border-radius:11px;padding:12px 14px;font-weight:800;font-size:1
 .rr:last-child{border-bottom:0}.val{font-weight:800;text-align:right}
 .error{display:none;background:#fff1f0;color:var(--red);padding:10px 12px;border-radius:10px;margin-top:10px;font-weight:700}
 .big{font-size:18px}.tag{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef2f6;font-size:12px;font-weight:800}
-@media(max-width:780px){.grid2,.grid3{grid-template-columns:1fr}.sci{grid-template-columns:1fr 58px 84px}}
+
+.history-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.history-actions button{flex:1;min-width:180px}
+.saveSet{background:#172033;color:#fff}
+.history-list{display:grid;gap:12px;margin-top:14px}
+.history-item{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}
+.history-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.history-title{font-weight:850;font-size:17px}.history-time{font-size:12px;color:var(--muted)}
+.history-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.history-side{border-radius:12px;padding:12px}
+.history-side.innerSide{background:var(--bluebg)}
+.history-side.outerSide{background:var(--greenbg)}
+.history-kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14px}
+.history-kv span:nth-child(even){font-weight:750;text-align:right}
+.history-tools{display:flex;gap:8px;margin-top:12px}
+.history-tools button{padding:8px 10px;font-size:13px}
+.empty{color:var(--muted);padding:8px 0}
+@media(max-width:780px){.grid2,.grid3,.history-grid{grid-template-columns:1fr}.sci{grid-template-columns:1fr 58px 84px}}
+
 </style>
 </head>
 <body>
@@ -201,9 +219,28 @@ Q = vA
 <div class="step"><b>⑥ ตอนอยู่หน้าเครื่อง</b><br>ถ้าปั๊มทำได้ไม่ถึงค่าที่คำนวณ ให้ใส่ Q จริงกลับเข้าช่อง “ตรวจกลับ” เว็บจะหา Re จริงให้ทันที</div>
 </section>
 
+
+<section class="card">
+<h2>4) ประวัติการคำนวณแบบเป็นชุด</h2>
+<p class="note">เมื่อคำนวณท่อในและท่อนอกเสร็จแล้ว กด “บันทึกชุดนี้” เพื่อเก็บผลทั้งสองฝั่งไว้ด้วยกัน เช่น Trial 1, ก่อนปรับปั๊ม, หลังปรับปั๊ม</p>
+
+<label>ชื่อชุดข้อมูล</label>
+<input id="setName" placeholder="เช่น Trial 1 / ก่อนปรับปั๊ม">
+
+<div class="history-actions">
+  <button class="saveSet" type="button" onclick="saveCurrentSet()">บันทึกชุดนี้</button>
+  <button class="secondary" type="button" onclick="exportHistoryCSV()">Export ประวัติเป็น CSV</button>
+  <button class="danger" type="button" onclick="clearHistory()">ล้างประวัติทั้งหมด</button>
+</div>
+
+<div id="historyList" class="history-list"></div>
+</section>
+
 </main>
 
 <script>
+var currentInner=null,currentOuter=null,currentCheckInner=null,currentCheckOuter=null;
+var HISTORY_KEY="doublePipeHX_history_sets_v6";
 function E(id){return document.getElementById(id)}
 function N(id){return parseFloat(E(id).value)}
 function sci(v,e){return v*Math.pow(10,e)}
@@ -242,6 +279,7 @@ window.calcInner=function(){
   var d=innerData(),Re=N("Re_in");
   if(!(Re>0))throw new Error("กรุณากรอก Re ที่ต้องการ");
   var v=Re*d.mu/(d.rho*d.Dh),Q=v*d.A,QL=Q*60000;
+  currentInner={D:d.D,Dh:d.Dh,A:d.A,rho:d.rho,mu:d.mu,Re:Re,v:v,Q:Q,QL:QL,regime:regime(Re)};
   E("res_in").innerHTML=
    '<div class="rr"><span>Dₕ</span><span class="val">'+fmt(d.Dh)+' m</span></div>'+
    '<div class="rr"><span>A</span><span class="val">'+fmt(d.A)+' m²</span></div>'+
@@ -258,6 +296,7 @@ window.calcOuter=function(){
   var d=outerData(),Re=N("Re_out");
   if(!(Re>0))throw new Error("กรุณากรอก Re ที่ต้องการ");
   var v=Re*d.mu/(d.rho*d.Dh),Q=v*d.A,QL=Q*60000;
+  currentOuter={Do:d.Do,Di:d.Di,Dh:d.Dh,A:d.A,rho:d.rho,mu:d.mu,Re:Re,v:v,Q:Q,QL:QL,regime:regime(Re)};
   E("res_out").innerHTML=
    '<div class="rr"><span>Dₕ = Dₒ − Dᵢ</span><span class="val">'+fmt(d.Dh)+' m</span></div>'+
    '<div class="rr"><span>A</span><span class="val">'+fmt(d.A)+' m²</span></div>'+
@@ -273,6 +312,7 @@ window.checkInner=function(){
   var d=innerData(),QL=N("Qactual_in");
   if(!(QL>=0))throw new Error("กรุณากรอก Q จริง");
   var Q=QL/60000,v=Q/d.A,Re=d.rho*v*d.Dh/d.mu;
+  currentCheckInner={QL:QL,Q:Q,v:v,Re:Re,regime:regime(Re)};
   E("check_in").innerHTML=
    '<div class="rr"><span>v จริง</span><span class="val">'+fmt(v)+' m/s</span></div>'+
    '<div class="rr"><span>Re จริง</span><span class="val big">'+fmt(Re)+'</span></div>'+
@@ -285,12 +325,100 @@ window.checkOuter=function(){
   var d=outerData(),QL=N("Qactual_out");
   if(!(QL>=0))throw new Error("กรุณากรอก Q จริง");
   var Q=QL/60000,v=Q/d.A,Re=d.rho*v*d.Dh/d.mu;
+  currentCheckOuter={QL:QL,Q:Q,v:v,Re:Re,regime:regime(Re)};
   E("check_out").innerHTML=
    '<div class="rr"><span>v จริง</span><span class="val">'+fmt(v)+' m/s</span></div>'+
    '<div class="rr"><span>Re จริง</span><span class="val big">'+fmt(Re)+'</span></div>'+
    '<div class="rr"><span>Flow regime</span><span class="val">'+regime(Re)+'</span></div>';
  }catch(ex){E("check_out").innerHTML='<div class="rr"><span>ผิดพลาด</span><span class="val">'+ex.message+'</span></div>'}
 }
+
+function getHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]")}catch(ex){return[]}}
+function setHistory(h){localStorage.setItem(HISTORY_KEY,JSON.stringify(h))}
+function esc(t){return String(t==null?"":t).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+
+window.saveCurrentSet=function(){
+  if(!currentInner && !currentOuter){
+    alert("กรุณาคำนวณท่อในหรือท่อนอกอย่างน้อย 1 ฝั่งก่อนบันทึก");
+    return;
+  }
+  var h=getHistory();
+  var name=E("setName").value.trim() || ("ชุดการคำนวณ "+(h.length+1));
+  h.unshift({
+    id:Date.now(),
+    name:name,
+    time:new Date().toISOString(),
+    inner:currentInner,
+    outer:currentOuter,
+    actualInner:currentCheckInner,
+    actualOuter:currentCheckOuter
+  });
+  if(h.length>100)h=h.slice(0,100);
+  setHistory(h);
+  E("setName").value="";
+  renderHistory();
+};
+
+window.deleteHistorySet=function(id){
+  setHistory(getHistory().filter(function(x){return x.id!==id}));
+  renderHistory();
+};
+
+function sideHTML(title,d,actual,cls){
+  if(!d)return '<div class="history-side '+cls+'"><b>'+title+'</b><div class="note">ไม่ได้คำนวณฝั่งนี้ในชุดนี้</div></div>';
+  var dims = title==="ท่อใน"
+    ? '<span>D</span><span>'+fmt(d.D)+' m</span>'
+    : '<span>Dₒ</span><span>'+fmt(d.Do)+' m</span><span>Dᵢ</span><span>'+fmt(d.Di)+' m</span>';
+  return '<div class="history-side '+cls+'"><b>'+title+'</b><div class="history-kv">'+
+    dims+
+    '<span>ρ</span><span>'+fmt(d.rho)+' kg/m³</span>'+
+    '<span>μ</span><span>'+fmt(d.mu)+' Pa·s</span>'+
+    '<span>Re เป้าหมาย</span><span>'+fmt(d.Re)+'</span>'+
+    '<span>v</span><span>'+fmt(d.v)+' m/s</span>'+
+    '<span>Q</span><span>'+fmt(d.QL)+' L/min</span>'+
+    (actual?'<span>Q จริง</span><span>'+fmt(actual.QL)+' L/min</span><span>Re จริง</span><span>'+fmt(actual.Re)+' ('+actual.regime+')</span>':'')+
+    '</div></div>';
+}
+
+function renderHistory(){
+  var h=getHistory(),box=E("historyList");
+  if(!h.length){box.innerHTML='<div class="empty">ยังไม่มีชุดข้อมูลที่บันทึกไว้</div>';return}
+  box.innerHTML=h.map(function(item){
+    return '<div class="history-item">'+
+      '<div class="history-head"><div><div class="history-title">'+esc(item.name)+'</div><div class="history-time">'+new Date(item.time).toLocaleString("th-TH")+'</div></div></div>'+
+      '<div class="history-grid">'+
+        sideHTML("ท่อใน",item.inner,item.actualInner,"innerSide")+
+        sideHTML("ท่อนอก / Annulus",item.outer,item.actualOuter,"outerSide")+
+      '</div>'+
+      '<div class="history-tools"><button class="danger" type="button" onclick="deleteHistorySet('+item.id+')">ลบชุดนี้</button></div>'+
+    '</div>';
+  }).join("");
+}
+
+window.clearHistory=function(){
+  if(confirm("ต้องการล้างประวัติทั้งหมดใช่ไหม?")){
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+  }
+};
+
+window.exportHistoryCSV=function(){
+  var h=getHistory();
+  if(!h.length){alert("ยังไม่มีประวัติให้ Export");return}
+  var rows=[["time","set_name","side","D_m","Do_m","Di_m","rho_kgm3","mu_Pas","Re_target","v_ms","Q_m3s","Q_Lmin","Q_actual_Lmin","Re_actual","actual_regime"]];
+  h.forEach(function(item){
+    if(item.inner) rows.push([item.time,item.name,"inner",item.inner.D,"","",item.inner.rho,item.inner.mu,item.inner.Re,item.inner.v,item.inner.Q,item.inner.QL,item.actualInner?item.actualInner.QL:"",item.actualInner?item.actualInner.Re:"",item.actualInner?item.actualInner.regime:""]);
+    if(item.outer) rows.push([item.time,item.name,"annulus","",item.outer.Do,item.outer.Di,item.outer.rho,item.outer.mu,item.outer.Re,item.outer.v,item.outer.Q,item.outer.QL,item.actualOuter?item.actualOuter.QL:"",item.actualOuter?item.actualOuter.Re:"",item.actualOuter?item.actualOuter.regime:""]);
+  });
+  var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"'}).join(",")}).join("\n");
+  var blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+  var url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download="double_pipe_HX_history_sets.csv";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+};
+
+renderHistory();
+
 </script>
 </body>
 </html>
